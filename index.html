@@ -134,7 +134,7 @@ const dl = (c / 3) * 213.6;
 document.getElementById("app").innerHTML = `
   <div class="header">
     <div><h1>JPY / oil carry trade monitor</h1><div class="sub">Based on the oil-in-yen thesis by <a href="https://x.com/leadlagreport" style="color:#60a5fa;text-decoration:none;">@leadlagreport</a> \u2014 3-box confirmation check</div><div class="sub" style="margin-top:4px;font-size:11px;color:#4b5563;">Independent &amp; unaffiliated. Not endorsed by or associated with Lead-Lag Report or Michael Gayed.</div></div>
-    <div class="meta"><div class="ts">${D.timestamp}</div></div>
+    <div class="meta"><div class="ts" id="live-clock"></div><div class="ts" style="margin-top:4px;">Data as of: ${D.timestamp}</div></div>
   </div>
   <div class="score-ring">
     <div class="ring-wrap">
@@ -204,6 +204,20 @@ document.getElementById("app").innerHTML = `
     <div class="disc">Not investment advice. Informational monitor only. WTI: $${D.wti}/bbl | Brent: $${D.brent}/bbl</div>
   </div>
 `;
+
+// Live clock
+function updateClock() {
+  const el = document.getElementById("live-clock");
+  if (!el) return;
+  const now = new Date();
+  el.textContent = now.toLocaleString("en-US", {
+    month: "short", day: "numeric", year: "numeric",
+    hour: "numeric", minute: "2-digit", second: "2-digit",
+    hour12: true, timeZone: "America/New_York"
+  }) + " ET";
+}
+updateClock();
+setInterval(updateClock, 1000);
 </script>
 </body>
 </html>
