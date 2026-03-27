@@ -3,221 +3,241 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JPY Oil Carry Trade Monitor — Based on @leadlagreport thesis</title>
+<title>JPY / Oil Carry Trade Monitor</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: #111827; color: #f9fafb; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; padding: 32px 24px; min-height: 100vh; }
-  .container { max-width: 960px; margin: 0 auto; }
-  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; }
-  .header h1 { font-size: 24px; font-weight: 700; }
-  .header .sub { font-size: 13px; color: #6b7280; margin-top: 4px; }
-  .header .meta { text-align: right; }
-  .header .ts { font-size: 12px; color: #6b7280; }
-  .score-ring { display: flex; align-items: center; gap: 24px; margin-bottom: 32px; background: #1f2937; border-radius: 16px; padding: 24px; }
-  .ring-wrap { position: relative; width: 80px; height: 80px; flex-shrink: 0; }
-  .ring-num { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
-  .ring-num .n { font-size: 28px; font-weight: 800; }
-  .ring-num .d { font-size: 14px; color: #6b7280; margin-top: 8px; }
-  .verdict { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
-  .detail { font-size: 13px; color: #9ca3af; line-height: 1.5; max-width: 600px; }
-  .signal-bar { display: flex; gap: 8px; margin-bottom: 32px; }
-  .bar-seg { flex: 1; height: 6px; border-radius: 3px; background: #374151; }
-  .bar-seg.on { background: #22c55e; }
-  .section-label { font-size: 11px; font-weight: 600; color: #6b7280; letter-spacing: 1px; margin-bottom: 12px; }
-  .cards { display: flex; gap: 16px; margin-bottom: 32px; flex-wrap: wrap; }
-  .card { background: #1f2937; border-radius: 12px; padding: 20px; flex: 1; min-width: 200px; }
-  .card.confirmed { border: 1px solid #16a34a33; }
-  .card.not-confirmed { border: 1px solid #dc262633; }
-  .card.neutral { border: 1px solid #374151; }
-  .card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-  .card-title { font-size: 12px; font-weight: 600; color: #9ca3af; letter-spacing: 0.5px; }
-  .badge { padding: 4px 12px; border-radius: 4px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; }
-  .badge.green { background: #16a34a22; color: #4ade80; border: 1px solid #16a34a44; }
-  .badge.red { background: #dc262622; color: #f87171; border: 1px solid #dc262644; }
-  .badge.amber { background: #f59e0b22; color: #fbbf24; border: 1px solid #f59e0b44; }
-  .price { font-size: 28px; font-weight: 800; }
-  .change { font-size: 14px; margin-bottom: 12px; }
-  .change.up { color: #4ade80; }
-  .change.down { color: #f87171; }
-  .context { font-size: 12px; color: #6b7280; line-height: 1.5; }
-  .reading-box { background: #1f2937; border-radius: 12px; padding: 20px; margin-bottom: 32px; border: 1px solid #374151; }
-  .reading-box p { font-size: 14px; line-height: 1.7; }
-  .reading-box strong { color: #f9fafb; }
-  .reading-box span { color: #9ca3af; }
-  .pills { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-  .pill { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; background: #374151; color: #6b7280; border: 1px solid transparent; }
-  .pill.active { border: 1px solid; }
-  .scenario-bar { background: #0f172a; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
-  .scenario-label { font-size: 11px; font-weight: 700; letter-spacing: 0.5px; margin-right: 12px; }
-  .scenario-sub { font-size: 14px; color: #9ca3af; }
-  .plays-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
-  .play-card { background: #1f2937; border-radius: 10px; padding: 16px; border: 1px solid #374151; }
-  .play-title { font-size: 11px; font-weight: 600; color: #9ca3af; letter-spacing: 0.5px; margin-bottom: 4px; }
-  .play-tickers { font-size: 15px; font-weight: 700; color: #f9fafb; margin-bottom: 8px; }
-  .play-desc { font-size: 13px; color: #9ca3af; line-height: 1.5; }
-  .risk-box { background: #1f2937; border-radius: 10px; padding: 16px; margin-bottom: 48px; border: 1px solid #dc262633; }
-  .risk-label { font-size: 11px; font-weight: 600; color: #f87171; letter-spacing: 0.5px; margin-bottom: 4px; }
-  .risk-text { font-size: 13px; color: #9ca3af; line-height: 1.5; }
-  .footer { border-top: 1px solid #1f2937; padding-top: 16px; text-align: center; }
-  .footer .info { font-size: 11px; color: #4b5563; }
-  .footer .disc { font-size: 11px; color: #374151; margin-top: 4px; }
-  @media (max-width: 700px) {
-    .cards { flex-direction: column; }
-    .plays-grid { grid-template-columns: 1fr; }
-    .score-ring { flex-direction: column; text-align: center; }
+  :root {
+    --bg: #0c0e12;
+    --bg2: #13161c;
+    --bg3: #1a1e26;
+    --bg4: #222730;
+    --border: rgba(255,255,255,0.06);
+    --border-h: rgba(255,255,255,0.1);
+    --t1: #e8e6e1;
+    --t2: #9b9a95;
+    --t3: #5e5d59;
+    --green: #4ade80;
+    --green-bg: rgba(74,222,128,0.08);
+    --green-border: rgba(74,222,128,0.18);
+    --red: #f87171;
+    --red-bg: rgba(248,113,113,0.08);
+    --red-border: rgba(248,113,113,0.18);
+    --amber: #fbbf24;
+    --amber-bg: rgba(251,191,36,0.08);
+    --amber-border: rgba(251,191,36,0.18);
+    --blue: #60a5fa;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'DM Sans', -apple-system, sans-serif;
   }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--t1);
+    min-height: 100vh;
+    padding: 2rem;
+  }
+  .container { max-width: 860px; margin: 0 auto; }
+  .header { margin-bottom: 1.75rem; display: flex; justify-content: space-between; align-items: flex-start; }
+  .header h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.3px; }
+  .header .sub { font-size: 13px; color: var(--t2); margin-top: 4px; }
+  .timestamp { font-family: var(--mono); font-size: 11px; color: var(--t3); background: var(--bg3); padding: 4px 10px; border-radius: 6px; white-space: nowrap; margin-top: 4px; }
+  .score-hero { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 14px; padding: 1.5rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 1.5rem; }
+  .score-ring { width: 88px; height: 88px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; position: relative; }
+  .score-ring::before { content: ''; position: absolute; inset: 0; border-radius: 50%; border: 3px solid var(--bg4); }
+  .score-ring svg { position: absolute; inset: -2px; width: calc(100% + 4px); height: calc(100% + 4px); transform: rotate(-90deg); }
+  .score-ring .num { font-family: var(--mono); font-size: 28px; font-weight: 600; z-index: 1; }
+  .score-ring .den { font-family: var(--mono); font-size: 14px; color: var(--t3); z-index: 1; margin-left: 1px; }
+  .score-detail .verdict { font-size: 16px; font-weight: 500; margin-bottom: 4px; }
+  .score-detail .verdict-sub { font-size: 13px; color: var(--t2); line-height: 1.5; }
+  .conf-bar { display: flex; gap: 6px; margin-bottom: 1.25rem; }
+  .conf-seg { height: 6px; flex: 1; border-radius: 3px; }
+  .section-label { font-size: 11px; font-weight: 500; color: var(--t3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+  .signals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 1.25rem; }
+  .sig { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 12px; padding: 16px; transition: border-color 0.2s; }
+  .sig:hover { border-color: var(--border-h); }
+  .sig .row1 { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .sig .ticker { font-size: 12px; font-weight: 500; color: var(--t2); font-family: var(--mono); }
+  .sig .badge { font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: 20px; font-family: var(--mono); letter-spacing: 0.3px; }
+  .badge-pass { background: var(--green-bg); color: var(--green); border: 0.5px solid var(--green-border); }
+  .badge-fail { background: var(--red-bg); color: var(--red); border: 0.5px solid var(--red-border); }
+  .badge-mixed { background: var(--amber-bg); color: var(--amber); border: 0.5px solid var(--amber-border); }
+  .sig .price { font-size: 22px; font-weight: 600; font-family: var(--mono); letter-spacing: -0.5px; }
+  .sig .chg { font-size: 13px; font-weight: 500; font-family: var(--mono); margin-top: 2px; }
+  .sig .expect { font-size: 11px; color: var(--t3); margin-top: 10px; padding-top: 10px; border-top: 0.5px solid var(--border); }
+  .risk-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1.25rem; }
+  .risk-card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 12px; padding: 16px; }
+  .risk-card .row1 { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .risk-card .ticker { font-size: 12px; font-weight: 500; color: var(--t2); font-family: var(--mono); }
+  .risk-card .price { font-size: 22px; font-weight: 600; font-family: var(--mono); letter-spacing: -0.5px; }
+  .risk-card .chg { font-size: 13px; font-weight: 500; font-family: var(--mono); margin-top: 2px; }
+  .risk-card .note { font-size: 11px; color: var(--t3); margin-top: 10px; padding-top: 10px; border-top: 0.5px solid var(--border); line-height: 1.5; }
+  .reading { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 12px; padding: 1.25rem; }
+  .reading .reading-title { font-size: 13px; font-weight: 500; color: var(--t2); margin-bottom: 8px; }
+  .reading p { font-size: 13px; color: var(--t2); line-height: 1.7; }
+  .reading strong { color: var(--t1); font-weight: 500; }
+  .playbook { margin-bottom: 1.25rem; }
+  .playbook-tabs { display: flex; gap: 0; margin-bottom: 0; }
+  .playbook-tab { font-family: var(--mono); font-size: 11px; font-weight: 500; padding: 8px 16px; cursor: pointer; border: 0.5px solid var(--border); background: var(--bg3); color: var(--t3); transition: all 0.2s; border-bottom: none; border-radius: 8px 8px 0 0; position: relative; top: 1px; }
+  .playbook-tab:hover { color: var(--t2); }
+  .playbook-tab.active { background: var(--bg2); color: var(--t1); border-color: var(--border-h); z-index: 1; }
+  .playbook-tab .tab-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-right: 6px; vertical-align: middle; }
+  .playbook-panel { display: none; background: var(--bg2); border: 0.5px solid var(--border-h); border-radius: 0 12px 12px 12px; padding: 1.25rem; }
+  .playbook-panel.active { display: block; }
+  .playbook-panel .scenario-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .playbook-panel .scenario-badge { font-family: var(--mono); font-size: 10px; font-weight: 500; padding: 3px 10px; border-radius: 20px; }
+  .playbook-panel .scenario-title { font-size: 15px; font-weight: 500; }
+  .play-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .play-card { background: var(--bg3); border-radius: 10px; padding: 14px; border-left: 3px solid var(--t3); }
+  .play-card.long { border-left-color: var(--green); }
+  .play-card.short { border-left-color: var(--red); }
+  .play-card.hedge { border-left-color: var(--amber); }
+  .play-card.wait { border-left-color: var(--blue); }
+  .play-card .play-label { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
+  .play-card.long .play-label { color: var(--green); }
+  .play-card.short .play-label { color: var(--red); }
+  .play-card.hedge .play-label { color: var(--amber); }
+  .play-card.wait .play-label { color: var(--blue); }
+  .play-card .play-ticker { font-family: var(--mono); font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+  .play-card .play-desc { font-size: 12px; color: var(--t2); line-height: 1.5; }
+  .play-note { font-size: 12px; color: var(--t3); line-height: 1.6; padding-top: 10px; border-top: 0.5px solid var(--border); }
+  .play-note strong { color: var(--t2); font-weight: 500; }
+  .current-tag { font-family: var(--mono); font-size: 9px; background: var(--amber-bg); color: var(--amber); border: 0.5px solid var(--amber-border); padding: 2px 6px; border-radius: 4px; margin-left: 8px; vertical-align: middle; }
+  .legend-bar { display: flex; gap: 16px; margin-top: 1.25rem; font-size: 11px; color: var(--t3); font-family: var(--mono); }
+  .legend-bar span { display: flex; align-items: center; gap: 5px; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+  @media (max-width: 640px) { .play-grid { grid-template-columns: 1fr; } .playbook-tabs { flex-wrap: wrap; } }
+  .up { color: var(--green); }
+  .down { color: var(--red); }
+  @media (max-width: 640px) { body { padding: 1rem; } .signals { grid-template-columns: 1fr; } .risk-row { grid-template-columns: 1fr; } .score-hero { flex-direction: column; text-align: center; } }
 </style>
 </head>
 <body>
-<div class="container" id="app"></div>
-<script>
-// ===== DATA INJECTED BY SCHEDULED TASK â DO NOT EDIT BELOW THIS LINE =====
-const DATA = {
-  timestamp: "Mar 24, 2026, 5:30 PM ET",
-  uso:  { price: 113.99, change: 3.10, confirmed: true },
-  ewj:  { price: 83.24,  change: -0.37, confirmed: true },
-  fxy:  { price: 58.45,  change: 1.20, confirmed: true },
-  tlt:  { price: 86.38,  change: 0.64, confirmed: true },
-  spy:  { price: 655.38, change: 1.05 },
-  gld:  { price: 404.04, change: -2.26 },
-  wti:  "92.35",
-  brent: "102.47",
-  box1: true, box2: true, box3: true,
-  confirmed: 3,
-  reading: "Oil shock confirmed, Japan pressure confirmed, safe-haven rotation active in both yen and bonds.",
-  summary: "The carry trade unwind is fully in play. All three legs are confirming simultaneously. Strongest signal configuration.",
-  keyRisk: "Ceasefire or Hormuz reopening reverses all legs simultaneously. Trump's 5-day pause on strikes introduces near-term binary risk."
-};
-// ===== END DATA BLOCK =====
-
-const CC = ["#ef4444","#f59e0b","#84cc16","#22c55e"];
-const PB = {
-  3:{l:"FULL CONFIRMATION",s:"All legs active",p:[
-    {t:"LONG OIL (HIGH CONVICTION)",k:"USO \u00b7 XLE \u00b7 CVX",d:"Call spreads on USO for leveraged upside. XLE for equity exposure with dividend cushion."},
-    {t:"SHORT JAPAN (MODERATE)",k:"EWJ puts \u00b7 DXJ short",d:"EWJ puts 5-10% OTM, 30-60 DTE. DXJ short if yen strengthening."},
-    {t:"LONG YEN / BONDS",k:"FXY \u00b7 TLT calls",d:"FXY for direct yen exposure. TLT calls for flight-to-quality."},
-    {t:"HEDGE",k:"GLD \u00b7 VIX calls \u00b7 SPY puts",d:"GLD for inflation/chaos hedge. VIX calls for tail risk. SPY puts for broad protection."}
-  ],r:"Ceasefire or Hormuz reopening reverses all legs simultaneously."},
-  2:{l:"PARTIAL CONFIRMATION",s:"Thesis working, missing leg",p:[
-    {t:"LONG OIL (HIGH CONVICTION)",k:"USO \u00b7 XLE \u00b7 OIH",d:"Oil leg strongest. USO call spreads for leveraged upside with capped risk."},
-    {t:"SHORT JAPAN (MODERATE)",k:"EWJ puts \u00b7 HEWJ short",d:"EWJ pressure confirmed. Put spreads 5-10% OTM, 30-60 DTE."},
-    {t:"WATCH \u2014 DON'T CHASE",k:"FXY \u00b7 TLT",d:"The missing leg. Don't pre-position until one confirms."},
-    {t:"SELECTIVE HEDGING",k:"GLD \u00b7 TIPS \u00b7 DBA",d:"Gold working as inflation/chaos hedge. TIPS for real-rate protection."}
-  ],r:"Sell-everything regime possible \u2014 not a clean carry unwind."},
-  1:{l:"WEAK SIGNAL",s:"Thesis fading \u2014 reduce exposure",p:[
-    {t:"REDUCE EXPOSURE",k:"Trim USO \u00b7 Close EWJ shorts",d:"Take profits on oil if up. Close EWJ shorts before they reverse."},
-    {t:"DEFENSIVE ROTATION",k:"XLU \u00b7 XLP \u00b7 USMV",d:"Utilities, consumer staples, and minimum volatility for downside protection."},
-    {t:"RE-EVALUATE DAILY",k:"Monitor all 3 boxes",d:"Thesis may reactivate. Set alerts on USO, EWJ, FXY/TLT."},
-    {t:"CASH POSITION",k:"SGOV \u00b7 BIL \u00b7 T-bills",d:"Park proceeds in ultra-short duration."}
-  ],r:"Thesis may be dead \u2014 avoid doubling down. Wait for 2/3 confirmation."},
-  0:{l:"NO CONFIRMATION",s:"Thesis inactive \u2014 fade or reverse",p:[
-    {t:"FADE OIL SPIKE",k:"SCO \u00b7 USO puts",d:"SCO for inverse oil. USO puts for defined-risk short."},
-    {t:"BUY JAPAN RECOVERY",k:"EWJ calls \u00b7 DXJ long",d:"EWJ calls for recovery. DXJ long for currency-hedged Japan."},
-    {t:"BUY THE DIP",k:"SPY \u00b7 QQQ \u00b7 SOXX",d:"Broad market recovery plays."},
-    {t:"UNWIND ALL HEDGES",k:"Close GLD \u00b7 VIX \u00b7 puts",d:"Risk-off hedges bleeding theta. Redeploy capital."}
-  ],r:"Thesis may reactivate on new Iran escalation. Keep small pilots."}
-};
-
-const D = DATA;
-const c = D.confirmed;
-const co = CC[c];
-const pb = PB[c];
-const f = (n) => n == null ? "\u2014" : "$" + n.toFixed(2);
-const fp = (n) => n == null ? "\u2014" : (n >= 0 ? "+" : "") + n.toFixed(2) + "%";
-const bc = (confirmed) => confirmed ? "confirmed" : "not-confirmed";
-const bb = (confirmed) => confirmed ? '<span class="badge green">CONFIRMED</span>' : '<span class="badge red">NOT CONFIRMED</span>';
-const cc = (change) => change >= 0 ? "up" : "down";
-const spySt = D.spy.change < -0.5 ? "STRESS ACTIVE" : D.spy.change < 0 ? "CAUTIOUS" : "STABLE";
-const spyCo = spySt === "STRESS ACTIVE" ? "#f87171" : spySt === "CAUTIOUS" ? "#fbbf24" : "#4ade80";
-const dl = (c / 3) * 213.6;
-
-document.getElementById("app").innerHTML = `
+<div class="container">
   <div class="header">
-    <div><h1>JPY / oil carry trade monitor</h1><div class="sub">Based on the oil-in-yen thesis by <a href="https://x.com/leadlagreport" style="color:#60a5fa;text-decoration:none;">@leadlagreport</a> \u2014 3-box confirmation check</div><div class="sub" style="margin-top:4px;font-size:11px;color:#4b5563;">Independent &amp; unaffiliated. Not endorsed by or associated with Lead-Lag Report or Michael Gayed.</div></div>
-    <div class="meta"><div class="ts" id="live-clock"></div><div class="ts" style="margin-top:4px;">Data as of: ${D.timestamp}</div></div>
+    <div>
+      <h1>JPY / oil carry trade monitor</h1>
+      <div class="sub">Iran conflict thesis — 3-box confirmation check</div>
+    </div>
+    <div class="timestamp">Mar 27, 2026 ~4:30 PM ET</div>
   </div>
-  <div class="score-ring">
-    <div class="ring-wrap">
-      <svg viewBox="0 0 80 80" style="transform:rotate(-90deg)">
-        <circle cx="40" cy="40" r="34" fill="none" stroke="#374151" stroke-width="8"/>
-        <circle cx="40" cy="40" r="34" fill="none" stroke="${co}" stroke-width="8" stroke-dasharray="${dl} 213.6" stroke-linecap="round"/>
+  <div class="score-hero">
+    <div class="score-ring">
+      <svg viewBox="0 0 96 96">
+        <circle cx="48" cy="48" r="42" fill="none" stroke-width="3" stroke="var(--amber)" stroke-dasharray="176 88" stroke-linecap="round"/>
       </svg>
-      <div class="ring-num"><span class="n" style="color:${co}">${c}</span><span class="d">/3</span></div>
+      <span class="num">2</span><span class="den">/3</span>
     </div>
-    <div><div class="verdict">${D.summary.split(".")[0]}.</div><div class="detail">${D.summary}</div></div>
-  </div>
-  <div class="signal-bar">
-    <div class="bar-seg ${D.box1 ? "on" : ""}"></div>
-    <div class="bar-seg ${D.box2 ? "on" : ""}"></div>
-    <div class="bar-seg ${D.box3 ? "on" : ""}"></div>
-  </div>
-  <div class="section-label">CORE SIGNALS</div>
-  <div class="cards">
-    <div class="card ${bc(D.box1)}">
-      <div class="card-head"><span class="card-title">USO</span>${bb(D.box1)}</div>
-      <div class="price">${f(D.uso.price)}</div>
-      <div class="change ${cc(D.uso.change)}">${fp(D.uso.change)}</div>
-      <div class="context">${D.box1 ? "Oil trending up \u2014 geopolitical supply disruption in play." : "Oil not showing significant upward pressure."}</div>
-    </div>
-    <div class="card ${bc(D.box2)}">
-      <div class="card-head"><span class="card-title">EWJ</span>${bb(D.box2)}</div>
-      <div class="price">${f(D.ewj.price)}</div>
-      <div class="change ${cc(D.ewj.change)}">${fp(D.ewj.change)}</div>
-      <div class="context">${D.box2 ? "Japan equity under pressure. EWJ vs SPY spread: " + (D.ewj.change - D.spy.change).toFixed(2) + "%" : "Japan holding up. EWJ vs SPY spread: " + (D.ewj.change - D.spy.change).toFixed(2) + "%"}</div>
-    </div>
-    <div class="card ${bc(D.box3)}">
-      <div class="card-head"><span class="card-title">FXY / TLT</span>${bb(D.box3)}</div>
-      <div class="price">${f(D.fxy.price)} / ${f(D.tlt.price)}</div>
-      <div class="change"><span style="color:${D.fxy.change >= 0 ? "#4ade80" : "#f87171"}">FXY ${fp(D.fxy.change)}</span> <span style="color:#6b7280">\u00b7</span> <span style="color:${D.tlt.change >= 0 ? "#4ade80" : "#f87171"}">TLT ${fp(D.tlt.change)}</span></div>
-      <div class="context">${D.box3 ? "Safe-haven rotation active \u2014 yen and/or bonds rallying on risk-off flows." : "Neither yen nor bonds rallying \u2014 no safe-haven bid detected."}</div>
+    <div class="score-detail">
+      <div class="verdict" style="color:var(--amber);">Partial confirmation 2/3 — oil spike and Japan pressure confirmed, safe-haven rotation missing</div>
+      <div class="verdict-sub">USO surged +5.92% to $124.20 as Brent hit $112.57 — highest since 2022 on Hormuz closure. EWJ slipped -0.32% to $83.09 under energy cost pressure. But FXY flat at $57.74 and TLT -0.27% to $85.88 — no safe-haven bid yet. SPY -0.36% to $645.09, risk-off backdrop building. GLD +2.95% to $412.44 as gold catches inflation/chaos bid. Israel expanding strikes on Iran; Trump extended Hormuz deadline to April 6. Iran rejects ceasefire, demands Strait sovereignty.</div>
     </div>
   </div>
-  <div class="section-label">RISK FILTER</div>
-  <div class="cards">
-    <div class="card neutral">
-      <div class="card-head"><span class="card-title">SPY</span><span style="font-size:11px;font-weight:700;color:${spyCo}">${spySt}</span></div>
-      <div class="price">${f(D.spy.price)}</div>
-      <div class="change ${cc(D.spy.change)}">${fp(D.spy.change)}</div>
+  <div class="conf-bar">
+    <div class="conf-seg" style="background:var(--amber);"></div>
+    <div class="conf-seg" style="background:var(--amber);"></div>
+    <div class="conf-seg" style="background:var(--bg4);"></div>
+  </div>
+  <div class="section-label">Core signals</div>
+  <div class="signals">
+    <div class="sig">
+      <div class="row1"><span class="ticker">USO</span><span class="badge badge-pass">CONFIRMED</span></div>
+      <div class="price">$124.20</div>
+      <div class="chg up">+5.92%</div>
+      <div class="expect">Expect: USO up · Oil surging on Hormuz closure. WTI ~$99.64, Brent ~$112.57 — highest since 2022. Strait closed since March 2, ~17.8M bbl/day disrupted.</div>
     </div>
-    <div class="card neutral">
-      <div class="card-head"><span class="card-title">GLD</span><span class="badge amber">HEDGE</span></div>
-      <div class="price">${f(D.gld.price)}</div>
-      <div class="change ${cc(D.gld.change)}">${fp(D.gld.change)}</div>
+    <div class="sig">
+      <div class="row1"><span class="ticker">EWJ</span><span class="badge badge-pass">CONFIRMED</span></div>
+      <div class="price">$83.09</div>
+      <div class="chg down">-0.32%</div>
+      <div class="expect">Expect: EWJ down · Japan equity under pressure from surging energy costs. Brent above $112 severe for energy-import-dependent Japan.</div>
+    </div>
+    <div class="sig">
+      <div class="row1"><span class="ticker">FXY / TLT</span><span class="badge badge-fail">NOT CONFIRMED</span></div>
+      <div class="price" style="font-size:16px;">$57.74 / $85.88</div>
+      <div class="chg down">FXY flat · TLT -0.27%</div>
+      <div class="expect">Expect: FXY up or TLT up · Neither yen nor bonds rallying. Safe-haven rotation absent; market pricing inflation over recession.</div>
     </div>
   </div>
-  <div class="section-label">TODAY'S READING</div>
-  <div class="reading-box"><p><strong>${D.reading}</strong> <span>${D.summary}</span></p></div>
-  <div class="section-label">PLAYBOOK \u2014 BASED ON ${c}/3 CONFIRMATION</div>
-  <div class="pills">
-    ${[0,1,2,3].map(n => '<div class="pill ' + (n===c?"active":"") + '" style="' + (n===c ? "background:"+CC[n]+"22;color:"+CC[n]+";border-color:"+CC[n]+"44" : "") + '">' + n + '/3' + (n===c ? " \u2014 ACTIVE" : "") + '</div>').join("")}
+  <div class="section-label">Risk filter</div>
+  <div class="risk-row">
+    <div class="risk-card">
+      <div class="row1"><span class="ticker">SPY</span><span class="badge badge-fail">RISK-OFF</span></div>
+      <div class="price">$645.09</div>
+      <div class="chg down">-0.36% today</div>
+      <div class="note">SPY slipping despite Trump deadline extension. Broader risk-off backdrop active. S&P 500 7.6% off 52-week highs.</div>
+    </div>
+    <div class="risk-card">
+      <div class="row1"><span class="ticker">HORMUZ</span><span class="badge badge-fail">CRITICAL</span></div>
+      <div class="price" style="font-size:16px;">Strait closed — Day 25</div>
+      <div class="chg down">WTI ~$99.64/bbl | Brent ~$112.57/bbl</div>
+      <div class="note">~2,000 ships waiting. Trump extended strike deadline to April 6. Iran demands Strait sovereignty. GLD +2.95% to $412.44.</div>
+    </div>
   </div>
-  <div class="scenario-bar" style="border:1px solid ${co}33">
-    <span class="scenario-label" style="color:${co}">${pb.l}</span>
-    <span class="scenario-sub">${pb.s}</span>
+  <div class="reading">
+    <div class="reading-title">Today's reading</div>
+    <p><strong>2/3 partial confirmation — oil spike accelerating, Japan weakening, but no safe-haven rotation yet.</strong> USO surged +5.92% to $124.20 as Brent hit $112.57. Strait of Hormuz closed for 25 days. EWJ -0.32% under energy cost pressure. FXY flat at $57.74 and TLT -0.27% — safe-haven rotation has not materialized. GLD +2.95% to $412.44 absorbing chaos bid instead of treasuries. Israel expanding strikes; Trump extended deadline to April 6; Iran rejects ceasefire.</p>
   </div>
-  <div class="plays-grid">
-    ${pb.p.map(p => '<div class="play-card"><div class="play-title">'+p.t+'</div><div class="play-tickers">'+p.k+'</div><div class="play-desc">'+p.d+'</div></div>').join("")}
+  <div style="margin-top:1.25rem;"><div class="section-label">Playbook — how to play each scenario</div></div>
+  <div class="playbook">
+    <div class="playbook-tabs">
+      <div class="playbook-tab" onclick="showTab(0)"><span class="tab-dot" style="background:var(--green);"></span>3 / 3</div>
+      <div class="playbook-tab active" onclick="showTab(1)"><span class="tab-dot" style="background:var(--amber);"></span>2 / 3 <span class="current-tag">NOW</span></div>
+      <div class="playbook-tab" onclick="showTab(2)"><span class="tab-dot" style="background:var(--red);"></span>1 / 3</div>
+      <div class="playbook-tab" onclick="showTab(3)"><span class="tab-dot" style="background:var(--red);"></span>0 / 3</div>
+    </div>
+    <div class="playbook-panel" id="panel-0">
+      <div class="scenario-header"><span class="scenario-badge" style="background:var(--green-bg);color:var(--green);border:0.5px solid var(--green-border);">STRONG</span><span class="scenario-title">Full carry trade unwind</span></div>
+      <div class="play-grid">
+        <div class="play-card long"><div class="play-label">Long oil</div><div class="play-ticker">USO · XLE · CVX</div><div class="play-desc">Call spreads on USO. XLE for diversified energy. CVX favored.</div></div>
+        <div class="play-card short"><div class="play-label">Short Japan</div><div class="play-ticker">EWJ puts · DXJ short</div><div class="play-desc">Put spreads on EWJ for defined risk. DXJ short if yen strengthens.</div></div>
+        <div class="play-card long"><div class="play-label">Long yen / bonds</div><div class="play-ticker">FXY · TLT calls</div><div class="play-desc">FXY or USD/JPY puts for yen. TLT calls for duration on recession fear.</div></div>
+        <div class="play-card hedge"><div class="play-label">Hedge</div><div class="play-ticker">GLD · VIX calls · SPY puts</div><div class="play-desc">Gold + VIX + SPY put spreads for tail protection.</div></div>
+      </div>
+      <div class="play-note"><strong>Key risk:</strong> Ceasefire or Hormuz reopening reverses all legs. Oil can drop 15-20% in a day on peace headlines.</div>
+    </div>
+    <div class="playbook-panel active" id="panel-1">
+      <div class="scenario-header"><span class="scenario-badge" style="background:var(--amber-bg);color:var(--amber);border:0.5px solid var(--amber-border);">PARTIAL</span><span class="scenario-title">Thesis working, safe-haven leg missing</span></div>
+      <div class="play-grid">
+        <div class="play-card long"><div class="play-label">Long oil (high conviction)</div><div class="play-ticker">USO · XLE · OIH</div><div class="play-desc">Oil leg strongest. USO call spreads. XLE for dividend cushion. OIH for prolonged disruption.</div></div>
+        <div class="play-card short"><div class="play-label">Short Japan (moderate)</div><div class="play-ticker">EWJ puts · HEWJ short</div><div class="play-desc">Small position — put spreads 5-10% OTM, 30-60 DTE. Scale up if FXY confirms.</div></div>
+        <div class="play-card wait"><div class="play-label">Watch — don't chase</div><div class="play-ticker">FXY · TLT</div><div class="play-desc">Missing leg. Wait for TLT rally or FXY above $59 for carry unwind confirmation.</div></div>
+        <div class="play-card hedge"><div class="play-label">Selective hedging</div><div class="play-ticker">GLD · TIPS · DBA</div><div class="play-desc">GLD surging +2.95% to $412. TIPS for inflation. Consider VIX calls as SPY weakens.</div></div>
+      </div>
+      <div class="play-note"><strong>Key risk:</strong> Trump extended Hormuz deadline to April 6. If deal materializes, thesis collapses. If deadline passes, escalation. Iran demands Strait sovereignty — fundamental incompatibility. Watch FXY >$59 or TLT rally for Box 3.</div>
+    </div>
+    <div class="playbook-panel" id="panel-2">
+      <div class="scenario-header"><span class="scenario-badge" style="background:var(--red-bg);color:var(--red);border:0.5px solid var(--red-border);">WEAK</span><span class="scenario-title">One leg firing — thesis fading</span></div>
+      <div class="play-grid">
+        <div class="play-card wait"><div class="play-label">Reduce exposure</div><div class="play-ticker">Trim USO · Close EWJ shorts</div><div class="play-desc">Take profits on energy longs, close Japan shorts.</div></div>
+        <div class="play-card hedge"><div class="play-label">Defensive rotation</div><div class="play-ticker">XLU · XLP · USMV</div><div class="play-desc">Rotate into defensives for stability.</div></div>
+        <div class="play-card wait"><div class="play-label">Re-evaluate</div><div class="play-ticker">Monitor daily</div><div class="play-desc">Assess if conflict de-escalating or thesis may re-ignite.</div></div>
+        <div class="play-card hedge"><div class="play-label">Cash position</div><div class="play-ticker">SGOV · BIL</div><div class="play-desc">Short-duration treasuries. Preserve capital.</div></div>
+      </div>
+      <div class="play-note"><strong>Key risk:</strong> Can snap back to 3/3 on a single headline. Keep 20% position as option on re-escalation.</div>
+    </div>
+    <div class="playbook-panel" id="panel-3">
+      <div class="scenario-header"><span class="scenario-badge" style="background:var(--red-bg);color:var(--red);border:0.5px solid var(--red-border);">INACTIVE</span><span class="scenario-title">Thesis dead — conflict resolved</span></div>
+      <div class="play-grid">
+        <div class="play-card short"><div class="play-label">Fade oil</div><div class="play-ticker">SCO · USO puts</div><div class="play-desc">Oil mean-reverts on peace. USO put spreads.</div></div>
+        <div class="play-card long"><div class="play-label">Buy Japan</div><div class="play-ticker">EWJ calls · DXJ long</div><div class="play-desc">Japan snaps back as energy normalizes.</div></div>
+        <div class="play-card long"><div class="play-label">Buy the dip</div><div class="play-ticker">SPY · QQQ · SOXX</div><div class="play-desc">Geopolitical premium deflating. Buy US equities.</div></div>
+        <div class="play-card hedge"><div class="play-label">Unwind hedges</div><div class="play-ticker">Close GLD · VIX · puts</div><div class="play-desc">Hedges decay fast post de-escalation.</div></div>
+      </div>
+      <div class="play-note"><strong>Key risk:</strong> False peace. Scale in over 3-5 days to confirm durable de-escalation.</div>
+    </div>
   </div>
-  <div class="risk-box"><div class="risk-label">KEY RISK</div><div class="risk-text">${D.keyRisk}</div></div>
-  <div class="footer">
-    <div class="info">JPY/Oil Carry Trade Monitor \u00b7 Data from scheduled task web search \u00b7 Signal thresholds: USO &gt;+0.5%, EWJ &lt;-0.3% or underperforming SPY by &gt;0.5%, FXY &gt;+0.2% or TLT &gt;+0.3%</div>
-    <div class="disc">Not investment advice. Informational monitor only. WTI: $${D.wti}/bbl | Brent: $${D.brent}/bbl</div>
+  <div class="legend-bar">
+    <span><span class="legend-dot" style="background:var(--green);"></span>3/3 strong</span>
+    <span><span class="legend-dot" style="background:var(--amber);"></span>2/3 working</span>
+    <span><span class="legend-dot" style="background:var(--red);"></span>0-1/3 weak</span>
   </div>
-`;
-
-// Live clock
-function updateClock() {
-  const el = document.getElementById("live-clock");
-  if (!el) return;
-  const now = new Date();
-  el.textContent = now.toLocaleString("en-US", {
-    month: "short", day: "numeric", year: "numeric",
-    hour: "numeric", minute: "2-digit", second: "2-digit",
-    hour12: true, timeZone: "America/New_York"
-  }) + " ET";
+</div>
+<script>
+function showTab(idx) {
+  document.querySelectorAll('.playbook-tab').forEach((t,i) => t.classList.toggle('active', i===idx));
+  document.querySelectorAll('.playbook-panel').forEach((p,i) => p.classList.toggle('active', i===idx));
 }
-updateClock();
-setInterval(updateClock, 1000);
 </script>
 </body>
 </html>
