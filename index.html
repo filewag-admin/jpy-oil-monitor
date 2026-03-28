@@ -113,6 +113,18 @@
 </style>
 </head>
 <body>
+<!--
+  === DATA UPDATE CHECKLIST ===
+  When refreshing market data, update ALL of the following:
+  1. data-fetched attribute on #data-ts (ISO 8601 timestamp of when data was fetched)
+  2. Score ring: .num, stroke-dasharray, and stroke color (green/amber/red)
+  3. Verdict text and color in .score-detail
+  4. Conf-bar segment colors (green = confirmed, bg4 = not)
+  5. Each .sig card: price, change %, badge (badge-pass/badge-fail), expect text
+  6. Risk cards: SPY price/change, HORMUZ status, oil prices, GLD
+  7. Today's reading paragraph
+  8. Playbook: which tab is active + NOW tag, play card details
+-->
 <div class="container">
   <div class="header">
     <div>
